@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 
 regd_users.post("/login", (req, res) => {
-  const username = req.body.username;
+  const username = req.body.nickname;
   const password = req.body.password;
 
   // create db connection
@@ -34,4 +34,4 @@ regd_users.post("/login", (req, res) => {
   })
 })
 
-module.exports.authed = regd_users;
+module.exports = regd_users;

@@ -1,7 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const known_users = require('./routes/auth_users.js').authed;
+const known_users = require('./middleware/auth_users.js');
+const all_users = require('./middleware/register.js');
+const verbs = require('./routes/verbRoutes.js');
 const cors = require('cors');
 const app = express();
 
@@ -23,7 +25,6 @@ app.get("/user/:id", (req, res, next) => {
     jwt.verify(token, "access", (err, user) => {
       if (!err) {
         req.user = user;
-        console.log(req.user)
       }
     })
   }
@@ -35,4 +36,8 @@ const port = 5000;
 
 app.use("/user", known_users);
 
-app.listen(port, () => console.log("server is running"));
+app.use("/user", all_users);
+
+app.use('/verbs', verbs);
+
+app.listen(port, () => console.log("server is running on port " + port));
