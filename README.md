@@ -1,4 +1,4 @@
-# languagAppExpress
+# LanguagAppExpress
 
 This is the backend side of languageAppAngular project that you can find here: [https://github.com/sandurago/languageAppAngular](https://github.com/sandurago/languageAppAngular). <br />
 The project is being developed to serve as a platform to learn and practice French language.  <br />
