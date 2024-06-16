@@ -9,7 +9,6 @@ verbs.get('/verbslist', (_req, res) => {
     if (err) {
       db.close();
       console.log(err);
-      return res.send(err);
     } else {
       const formatRes = rows.map(({ name, translation, ...conjugation }) => ({
         name: name,

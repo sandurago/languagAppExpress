@@ -48,25 +48,27 @@ regd_users.post('/logout', (req, res) => {
   const id = req.body.id;
   const name = req.body.name;
   const username = req.body.username;
-  console.log(id + ' ' + name + ' ' + username);
-  console.log(name);
-  console.log(username);
   const date = lib.date();
 
   const db = new sqlite3.Database('./database.sqlite');
 
   db.get('SELECT id, name, username FROM User WHERE id = ? AND name = ? AND username = ?', id, name, username, (err, row) => {
     if (err) {
+      db.close();
       console.log(err);
+      return;
     } else {
       const userId = row.id;
       db.run('INSERT INTO UserLogoutTime (logout_time, user_id) VALUES (?, ?)', date, userId, (err) => {
         if (err) {
+          db.close();
           console.log(err);
+          return;
         } else {
+          db.close();
           return res.status(200).send({message: 'Successfully logged out.'});
         }
-      })
+      });
     }
   });
 })

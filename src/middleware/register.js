@@ -30,7 +30,6 @@ public_users.post("/register", (req, res) => {
     db.run("INSERT INTO User (name, username, password, created_at) VALUES (?, ?, ?, ?)", 
       name.toString(), username.toString(), password.toString(), date(), (err, row) => {
       if (err) {
-        console.log('here is error: ');
         console.log(err);
       } else {
         console.log('here is date: ' + date());
