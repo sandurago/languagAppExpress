@@ -1,9 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const known_users = require('./middleware/auth_users.js');
-const all_users = require('./middleware/register.js');
-const verbs = require('./routes/verbRoutes.js');
+const known_users = require('./src/middleware/auth_users.js');
+const all_users = require('./src/middleware/register.js');
+const verbs = require('./src/routes/verbRoutes.js');
 const cors = require('cors');
 const app = express();
 
