@@ -5,7 +5,7 @@ The project is being developed to serve as a platform to learn and practice Fren
 The project is still in progress of developaping.  <br />
 It's written using Express.js and JavaScript and it runs in Node.js environment.  <br />
 
-**Get started with the project**
+## **Get started with the project**
 
 1. Clone the project.
 2. In your terminal go to the location of the project and then languageAppExpress folder.
@@ -13,5 +13,5 @@ It's written using Express.js and JavaScript and it runs in Node.js environment.
 4. Run `node index.js`.
 
 
-**Author**
+## **Author**
 Sandra Liu.
