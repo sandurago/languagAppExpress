@@ -1,6 +1,11 @@
-function date() {
-    const date = new Date();
-    return date.toLocaleString();
+const moment = require('moment');
+
+function formatDate() {
+    return moment().format('DD/MM/YYYY HH:mm:ss');
 }
 
-module.exports = { date };
+function dateWithoutTime() {
+    return moment().format('MMMM Do YYYY');
+}
+
+module.exports = { formatDate, dateWithoutTime };

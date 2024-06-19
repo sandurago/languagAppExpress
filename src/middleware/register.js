@@ -1,46 +1,52 @@
 const express = require('express');
 const public_users = express.Router();
 const sqlite3 = require('sqlite3').verbose();
+const lib = require('../lib/lib');
 
-public_users.post("/register", (req, res) => {
+public_users.post('/register', (req, res) => {
   const username = req.body.username;
   const name = req.body.name;
   const password = req.body.password;
 
-  // Check if fields are filled
   if (!username || !name || !password) {
-    return res.status(400).send({ message: 'Name, username or password not provided.'})
+    return res.status(400).send({ message: 'Name, username or password not provided.'});
   }
 
-  // Open connection with database
   const db = new sqlite3.Database('./database.sqlite');
-  
-  const date = () => {
-    return new Date().toLocaleString();
-  }
 
-  // Check if user already exists
-  db.get("SELECT id FROM User WHERE username = ?", username, (err, row) => {
+  db.get('SELECT id FROM User WHERE username = ?', username, (_err, row) => {
     if (row) {
       db.close();
-      return res.status(409).send({ message: "User already exists." });
+      return res.status(409).send({ message: 'User already exists.' });
     }
 
-    // If the user doesnt exist, run the query below to add user to the database. We do this within GET verb.
-    db.run("INSERT INTO User (name, username, password, created_at) VALUES (?, ?, ?, ?)", 
-      name.toString(), username.toString(), password.toString(), date(), (err, row) => {
+    const date = lib.formatDate();
+
+    db.run('INSERT INTO User (name, username, password, created_at) VALUES (?, ?, ?, ?)', 
+      name.toString(), username.toString(), password.toString(), date, (err) => {
       if (err) {
         console.log(err);
       } else {
-        console.log('here is date: ' + date());
+        db.get('SELECT id FROM User WHERE name = ? AND username = ?', name.toString(), username.toString(), (err, row) => {
+          if (err) {
+            console.log(err);
+          } else {
+            db.run('INSERT INTO UserLoginLogoutTime (login_time, user_id) VALUES (?, ?)', date, row.id, (err) => {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log('ok');
+              }
+            });
+          }
+        });
       }
       db.close();
       return res.status(200).json({
-        "created_at": date(),
-      }
-      )
-    })
-  })
+        'created_at': date,
+      });
+    });
+  });
 })
 
 module.exports = public_users;
