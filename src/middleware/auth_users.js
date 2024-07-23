@@ -4,6 +4,7 @@ const regd_users = express.Router();
 const sqlite3 = require('sqlite3').verbose();
 const lib = require('../lib/lib');
 const momentTimeZone = require('moment-timezone');
+const moment = require('moment');
 
 
 regd_users.post('/login', (req, res) => {
@@ -12,7 +13,14 @@ regd_users.post('/login', (req, res) => {
 
   const db = new sqlite3.Database('./database.sqlite');
 
-  db.get('SELECT u.id, name, username, created_at, login_time FROM User u LEFT JOIN UserLoginLogoutTime ullt ON ullt.user_id = u.id WHERE username = ? AND password = ? ORDER BY ullt.id DESC', username, password, (err, row) => {
+  db.get(`
+    SELECT u.id, name, username, created_at, login_time
+    FROM User u
+    LEFT JOIN UserLoginLogoutTime ullt
+    ON ullt.user_id = u.id
+    WHERE username = ?
+    AND password = ?
+    ORDER BY ullt.id DESC`, username, password, (_err, row) => {
     if (!row) {
       db.close();
       return res.status(404).send({ message: 'Cannot login. Invalid username or password.'});
@@ -29,18 +37,41 @@ regd_users.post('/login', (req, res) => {
         accessToken, username,
       }
 
-      const dateWithoutTime = lib.dateWithoutTime();
-
       const userId = row.id;
 
       db.run('INSERT INTO UserLoginLogoutTime (login_time, user_id) VALUES (?, ?)', date, userId, (err) => {
         if (err) {
-          db.close();
-          return res.status(500).send({ message: 'Could not login user. Try again.'});
+          console.log(err);
         } else {
-          db.close();
-          const rowWithDate = Object.assign(row, {login_time: dateWithoutTime});
-          return res.status(200).json(rowWithDate);
+          db.all(`
+            SELECT SUBSTRING(login_time, 0, 11) AS date, SUM(time_logged_in) AS minutes
+            FROM UserLoginLogoutTime
+            WHERE login_time IS NOT NULL
+            AND logout_time IS NOT NULL
+            AND time_logged_in IS NOT NULL
+            AND date(replace(login_time, '/', '-')) < date('now', '-1 day')
+            AND user_id = ?
+            GROUP BY date
+            ORDER BY date DESC
+            LIMIT 5;
+            `, userId, (err, days) => {
+            if (err) {
+              db.close();
+              return res.status(500).send({ message: 'Could not login user. Try again.'});
+            } else {
+              db.close();
+              const previousDay = days[0].date;
+
+              const dateWithoutTime = lib.dateWithoutTime(previousDay);
+              const rowWithDate = {
+                ...row,
+                login_time: dateWithoutTime,
+                login_days: days
+              }
+              console.log(rowWithDate);
+              return res.status(200).json(rowWithDate);
+            }
+          });
         }
       })
     }
@@ -57,30 +88,26 @@ regd_users.post('/logout', (req, res) => {
   db.run('UPDATE UserLoginLogoutTime SET logout_time = ? WHERE id = (SELECT id FROM UserLoginLogoutTime WHERE user_id = ? ORDER BY id DESC)', logoutTime, id, (err) => {
     if (err) {
       db.close();
-      console.log(err);
-      return;
+      return res.status(500).json({ error: err.message });
     } else {
-      console.log('ok');
       db.get('SELECT login_time FROM UserLoginLogoutTime WHERE user_id = ? ORDER BY id DESC', id, (err, row) => {
         if (err) {
           console.log(err);
           res.status(500).json({ error: err.message });
         } else {
-          const login = momentTimeZone.tz(row.login_time, 'DD/MM/YYYY H:mm:ss', momentTimeZone.tz.guess());
-          const logout = momentTimeZone.tz(logoutTime, 'DD/MM/YYYY H:mm:ss', momentTimeZone.tz.guess());
-          const diff = logout.diff(login, 'seconds');
-          console.log(diff);
+          const login = momentTimeZone.tz(row.login_time, 'YYYY/MM/DD H:mm:ss', momentTimeZone.tz.guess());
+          const logout = momentTimeZone.tz(logoutTime, 'YYYY/MM/DD H:mm:ss', momentTimeZone.tz.guess());
+          const diff = logout.diff(login, 'minutes');
           db.run('UPDATE UserLoginLogoutTime SET time_logged_in = ? WHERE user_id = ? AND id = (SELECT id FROM UserLoginLogoutTime WHERE user_id = ? ORDER BY id DESC)', diff, id, id, (err) => {
             if (err) {
-              console.log(err);
+              return res.status(500).json({ error: err.message });
             } else {
-              console.log('ok2');
+              db.close();
+              return res.status(200).send({message: 'Successfully logged out.'});
             }
           });
         }
       })
-      db.close();
-      return res.status(200).send({message: 'Successfully logged out.'});
     }
   });
 })

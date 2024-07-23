@@ -22,7 +22,7 @@ public_users.post('/register', (req, res) => {
 
     const date = lib.formatDate();
 
-    db.run('INSERT INTO User (name, username, password, created_at) VALUES (?, ?, ?, ?)', 
+    db.run('INSERT INTO User (name, username, password, created_at) VALUES (?, ?, ?, ?)',
       name.toString(), username.toString(), password.toString(), date, (err) => {
       if (err) {
         console.log(err);
@@ -35,16 +35,15 @@ public_users.post('/register', (req, res) => {
               if (err) {
                 console.log(err);
               } else {
-                console.log('ok');
+                db.close();
+                return res.status(200).json({
+                  'created_at': date,
+                });
               }
             });
           }
         });
       }
-      db.close();
-      return res.status(200).json({
-        'created_at': date,
-      });
     });
   });
 })
