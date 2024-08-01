@@ -73,7 +73,6 @@ verbs.get('/profile/:id', (req, res) => {
       db.close();
       return;
     } else {
-      console.log(row);
       db.close();
       return res.status(200).send(row);
     }

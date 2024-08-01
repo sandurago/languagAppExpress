@@ -4,7 +4,6 @@ const regd_users = express.Router();
 const sqlite3 = require('sqlite3').verbose();
 const lib = require('../lib/lib');
 const momentTimeZone = require('moment-timezone');
-const moment = require('moment');
 
 
 regd_users.post('/login', (req, res) => {
@@ -50,11 +49,11 @@ regd_users.post('/login', (req, res) => {
             AND logout_time IS NOT NULL
             AND time_logged_in IS NOT NULL
             AND date(replace(login_time, '/', '-')) < date('now', '-1 day')
-            AND user_id = ?
+            AND user_id = ${userId}
             GROUP BY date
             ORDER BY date DESC
             LIMIT 5;
-            `, userId, (err, days) => {
+            `, (err, days) => {
             if (err) {
               db.close();
               return res.status(500).send({ message: 'Could not login user. Try again.'});
@@ -68,7 +67,6 @@ regd_users.post('/login', (req, res) => {
                 login_time: dateWithoutTime,
                 login_days: days
               }
-              console.log(rowWithDate);
               return res.status(200).json(rowWithDate);
             }
           });
@@ -80,12 +78,18 @@ regd_users.post('/login', (req, res) => {
 
 regd_users.post('/logout', (req, res) => {
   const id = req.body.id;
-  const name = req.body.name;
-  const username = req.body.username;
   const logoutTime = lib.formatDate();
 
   const db = new sqlite3.Database('./database.sqlite');
-  db.run('UPDATE UserLoginLogoutTime SET logout_time = ? WHERE id = (SELECT id FROM UserLoginLogoutTime WHERE user_id = ? ORDER BY id DESC)', logoutTime, id, (err) => {
+  db.run(`
+    UPDATE UserLoginLogoutTime
+    SET logout_time = ?
+    WHERE id = (SELECT id
+    FROM UserLoginLogoutTime
+    WHERE user_id = ?
+    ORDER BY id
+    DESC);`,
+    logoutTime, id, (err) => {
     if (err) {
       db.close();
       return res.status(500).json({ error: err.message });
