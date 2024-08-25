@@ -5,7 +5,6 @@ const sqlite3 = require('sqlite3').verbose();
 const lib = require('../lib/lib');
 const momentTimeZone = require('moment-timezone');
 
-
 regd_users.post('/login', (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
@@ -58,16 +57,38 @@ regd_users.post('/login', (req, res) => {
               db.close();
               return res.status(500).send({ message: 'Could not login user. Try again.'});
             } else {
-              db.close();
-              const previousDay = days[0].date;
+              db.all(
+                `SELECT created_at, v.name, score
+                FROM ConjugationPresentScore cps, Verb v
+                WHERE user_id = ${userId}
+                AND v.id = cps.verb_id
+                ORDER BY cps.created_at DESC
+                LIMIT 5;
+                `, (err, lastTaskInfo) => {
+                  if (err) {
+                    console.log(err);
+                  } else {
+                    console.log(lastTaskInfo);
+                    db.close();
+                    const previousDay = days[0].date;
 
-              const dateWithoutTime = lib.dateWithoutTime(previousDay);
-              const rowWithDate = {
-                ...row,
-                login_time: dateWithoutTime,
-                login_days: days
-              }
-              return res.status(200).json(rowWithDate);
+                    const tasksWithFormattedDate = lastTaskInfo.map((task) => {
+                      task.created_at = lib.formatFullDate(task.created_at);
+                      return task;
+                    })
+
+                    const dateWithoutTime = lib.dateWithoutTime(previousDay);
+                    const rowWithDate = {
+                      ...row,
+                      tasksWithFormattedDate,
+                      login_time: dateWithoutTime,
+                      login_days: days
+                    }
+                    console.log(rowWithDate);
+                    return res.status(200).json(rowWithDate);
+                  }
+                }
+              )
             }
           });
         }
